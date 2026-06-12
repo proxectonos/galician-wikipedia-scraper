@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # galician-wikipedia-scraper
 Pipeline for scraping, cleaning and exporting the Galician Wikipedia as a structured JSONL corpus.
 
@@ -66,11 +67,37 @@ bash run_full.sh --limit 50
 ```
 
 By default, the output is written under:
+=======
+# Galician Wikipedia JSONL pipeline
+
+This pipeline builds and updates a clean JSONL corpus from the Galician Wikipedia.
+
+The repository is designed to be publishable: it does not require editing private paths inside the scripts. By default, outputs are written under `./data` inside the repository. A different output directory can be passed with `--root` or with the `WIKI_ROOT` environment variable.
+
+## Installation
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+## Full dump
+
+Use this mode when there is no previous corpus or when a complete rebuild is needed.
+
+```bash
+bash run_full.sh
+```
+
+By default, outputs are written under:
+>>>>>>> ab19044 (Add scraper files.)
 
 ```text
 ./data/dump_YYYY/MM/
 ```
 
+<<<<<<< HEAD
 For example:
 
 ```text
@@ -283,3 +310,129 @@ This repository provides the tools to build the corpus, but it does not claim ow
 ## Acknowledgements
 
 This work is funded by the Ministerio para la Transformación Digital y de la Función Pública - Funded by EU – NextGenerationEU within the framework of the project Desarrollo de Modelos ALIA. Esta publicación del proyecto Desarrollo de Modelos ALIA está financiada por el Ministerio para la Transformación Digital y de la Función Pública y por el Plan de Recuperación, Transformación y Resiliencia – Financiado por la Unión Europea – NextGenerationEU.
+=======
+The final JSONL file is named:
+
+```text
+wikipedia_gl_YYYY-MM_dump.jsonl
+```
+
+Use a custom output directory:
+
+```bash
+bash run_full.sh --root /path/to/output
+```
+
+Small test run:
+
+```bash
+bash run_full.sh --limit 50 --keep-tmp
+# or
+bash test_full.sh
+```
+
+Useful options:
+
+```text
+--root PATH        Base output directory. Default: ./data
+--year YYYY        Override output year
+--month MM         Override output month
+--limit N          Limit number of articles, useful for tests
+--keep-tmp         Keep temporary raw JSONL chunks after a successful run
+--help             Show usage information
+```
+
+## Incremental update
+
+Use this mode after at least one full dump has been created.
+
+```bash
+bash run_incremental.sh
+```
+
+The incremental mode:
+
+1. Finds the latest previous `wikipedia_gl_*_dump.jsonl` file under the selected root directory.
+2. Reads the last successful run timestamp from `last_successful_run.txt`.
+3. Calls the MediaWiki `recentchanges` API to detect changed, new and deleted main-namespace pages.
+4. Re-scrapes only changed/new page IDs.
+5. Merges those pages into the previous full corpus.
+6. Removes deleted pages when deletion metadata is available.
+7. Reassigns sequential `id` values.
+
+Use a custom output directory:
+
+```bash
+bash run_incremental.sh --root /path/to/output
+```
+
+Override the last-run timestamp manually:
+
+```bash
+bash run_incremental.sh --last-run 2026-05-01T00:00:00Z
+```
+
+Fake incremental test:
+
+```bash
+bash test_incremental.sh
+```
+
+or manually:
+
+```bash
+WIKI_INCREMENTAL_TEST=1 WIKI_TEST_LIMIT=10 bash run_incremental.sh
+```
+
+## Output schema
+
+Each JSONL line has this structure:
+
+```json
+{
+  "pageid": 123,
+  "id": 1,
+  "title": "Título",
+  "text": "Texto limpo do artigo...",
+  "related_articles": ["Artigo relacionado"],
+  "num_tokens": 1234,
+  "url": "https://gl.wikipedia.org/wiki/..."
+}
+```
+
+## Scheduling
+
+The wrappers are compatible with external schedulers such as `cron`, `systemd timers` or SLURM. The wrappers do not schedule themselves; the scheduler calls them periodically.
+
+Example monthly cron job for incremental updates:
+
+```cron
+0 3 1 * * cd /path/to/wiki_pipeline && /usr/bin/bash run_incremental.sh --root /path/to/output >> /path/to/output/logs/cron_wikipedia_incremental.log 2>&1
+```
+
+A full rebuild can be scheduled less frequently, for example once per year:
+
+```cron
+0 2 1 1 * cd /path/to/wiki_pipeline && /usr/bin/bash run_full.sh --root /path/to/output >> /path/to/output/logs/cron_wikipedia_full.log 2>&1
+```
+
+If using a virtual environment or conda environment, create a small launcher script that activates the environment first and then calls the wrapper.
+
+## Configuration through environment variables
+
+All command-line options can be combined with environment variables. Command-line options are easier for manual use; environment variables are useful for automated deployments.
+
+```bash
+WIKI_ROOT=/path/to/output bash run_full.sh
+WIKI_USER_AGENT="ProjectName/1.0 (contact: contact@example.org)" bash run_full.sh
+WIKI_DELAY=2.0 bash run_full.sh
+```
+
+Recommended public deployments should set a real `WIKI_USER_AGENT` with a project name and contact address.
+
+## Notes
+
+- Temporary raw chunks are deleted after a successful run unless `--keep-tmp` is used.
+- Logs are saved in `ROOT/logs/`.
+- `./data/`, `./data_test/`, caches, logs and generated JSONL files should normally be ignored by version control.
+>>>>>>> ab19044 (Add scraper files.)
